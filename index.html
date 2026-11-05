@@ -319,7 +319,7 @@ $("bAdm").onclick=()=>{
  if(admin){openAdmin();return}
  modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Admin panel</h2><label for="pin">Kód</label><input id="pin" type="password" inputmode="numeric" autocomplete="off"><p style="margin:12px 0 0"><button class="go" id="pinOk" type="button">Odemknout</button></p><p class="err" id="pinErr"></p>`);
  $("cl").onclick=closeM;$("pin").focus();
- const chk=async()=>{if(!fb){$("pinErr").textContent="Web ještě není propojený s databází (viz návod).";return}try{await auth.signInWithEmailAndPassword(ADMIN_EMAIL,$("pin").value);admin=true;subEx();todayBar();openAdmin()}catch(e){$("pinErr").textContent="Špatný kód."}};
+ const chk=async()=>{if(!fb){$("pinErr").textContent="Web ještě není propojený s databází (viz návod).";return}try{await auth.signInWithEmailAndPassword(ADMIN_EMAIL,$("pin").value);admin=true;subEx();todayBar();openAdmin()}catch(e){const c=e&&e.code||String(e);const m={"auth/invalid-credential":"Špatný kód, nebo účet admin@smeny.web ve Firebase ještě neexistuje.","auth/user-not-found":"Účet admin@smeny.web ve Firebase ještě neexistuje.","auth/wrong-password":"Špatný kód.","auth/operation-not-allowed":"V Authentication není zapnuté Email/Password.","auth/invalid-api-key":"Špatný apiKey v index.html.","auth/api-key-not-valid.-please-pass-a-valid-api-key.":"Špatný apiKey v index.html.","auth/network-request-failed":"Chyba sítě.","auth/too-many-requests":"Moc pokusů, počkej chvíli."};$("pinErr").textContent=(m[c]||"Chyba")+" ("+c+")"}};
  $("pinOk").onclick=chk;$("pin").onkeydown=e=>{if(e.key==="Enter")chk()};
 };
 function openAdmin(){
