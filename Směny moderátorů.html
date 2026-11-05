@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Směny moderátorů</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#fff7ee;--surface:#ffffff;--text:#24203a;--muted:#6e6a85;--line:#eadfd0;--we:#fff1de;
+--c0:#3b82f6;--c1:#ec4899;--c2:#10b981;--c3:#f59e0b;--c4:#8b5cf6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17142a;--surface:#221e3b;--text:#f4f1ff;--muted:#a9a3c8;--line:#363054;--we:#2a2547;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17142a;--surface:#221e3b;--text:#f4f1ff;--muted:#a9a3c8;--line:#363054;--we:#2a2547;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.4 "Fredoka","Segoe UI",system-ui,sans-serif}
+.hero{position:relative;overflow:hidden;color:#fff;padding:20px 16px 70px;background:linear-gradient(120deg,#3b82f6,#8b5cf6,#ec4899,#f59e0b,#10b981,#3b82f6);background-size:300% 300%;animation:flow 14s ease infinite}
+.hero .in{position:relative;max-width:1000px;margin:0 auto}
+.blob{position:absolute;border-radius:50%;background:rgba(255,255,255,.18);animation:float 8s ease-in-out infinite}
+.topb{display:flex;gap:8px;justify-content:flex-end;margin-bottom:6px}
+.topb button{background:rgba(255,255,255,.22);color:#fff;border-color:rgba(255,255,255,.5);padding:6px 14px;position:relative}
+.topb .cnt{position:absolute;top:-6px;right:-4px;background:#ef4444;border-radius:999px;font-size:.75rem;min-width:20px;padding:0 5px;text-align:center}
+.hero h1{margin:0;font-size:clamp(2rem,6vw,3.2rem);font-weight:700;line-height:1.1}
+.hero p{margin:6px 0 0;font-size:1.1rem;opacity:.95}
+.notice{margin-top:14px;background:#fff;color:#24203a;border-radius:14px;padding:10px 14px;font-weight:500;animation:pop .5s both}
+.today{display:flex;flex-wrap:wrap;gap:14px;margin-top:20px}
+.tcard{background:rgba(255,255,255,.95);color:#24203a;border-radius:22px;padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 10px 30px rgba(36,32,58,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.tcard:nth-child(2){animation-delay:.15s;opacity:.92}
+.tcard.me{background:#24203a;color:#fff}
+.tl{font-weight:600;font-size:1.05rem;min-width:84px}
+.tl small{display:block;font-weight:400;color:#6e6a85;font-size:.85rem}
+.tcard.me .tl small{color:#c9c3ea}
+.tp{display:flex;gap:12px}
+.pp{display:flex;flex-direction:column;align-items:center;font-weight:600;font-size:.95rem}
+.pp svg{width:58px;height:58px;animation:bob 3s ease-in-out infinite}
+.pp:nth-child(2) svg{animation-delay:-1.5s}
+main{max-width:1000px;margin:-44px auto 0;padding:0 12px 40px;position:relative}
+.panel{background:var(--surface);border-radius:26px;padding:16px;box-shadow:0 12px 36px rgba(36,32,58,.12);margin-bottom:18px}
+.panel h2{margin:0 0 4px;font-size:1.3rem}
+.mods{display:flex;flex-wrap:wrap;gap:8px}
+button,select,input,textarea{font:inherit;color:var(--text)}
+button{cursor:pointer;border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px 5px 6px;display:inline-flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s}
+button:hover{transform:translateY(-2px) rotate(-1deg)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--text);outline-offset:2px}
+.mb svg{width:34px;height:34px}
+.mb[aria-pressed="true"]{color:#fff;border-color:transparent;background:var(--k);box-shadow:0 6px 16px color-mix(in srgb,var(--k) 55%,transparent);font-weight:600}
+.all,.go,.sm{padding:8px 16px}
+.all[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:transparent;font-weight:600}
+.go{background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;border-color:transparent;font-weight:600}
+.sm{padding:4px 12px;font-size:.9rem}
+.danger{border-color:#ef4444;color:#ef4444}
+.months{display:flex;gap:8px;overflow-x:auto;padding:14px 0 6px}
+.mo{padding:8px 16px;border-radius:14px}
+.mo[aria-pressed="true"]{background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;border-color:transparent;font-weight:600}
+.info{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 14px;min-height:34px}
+.bar{display:flex;align-items:center;gap:6px;font-size:.9rem;color:var(--muted)}
+.bar i{display:inline-block;height:12px;border-radius:6px;background:var(--k);animation:grow .7s ease both}
+.nx{padding:4px 12px;border-radius:999px;background:var(--k);color:#fff;font-weight:600;font-size:.92rem;animation:pop .4s both}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dn{text-align:center;font-weight:600;color:var(--muted);padding:2px}
+.cell{position:relative;background:var(--surface);border:2px solid var(--line);border-radius:16px;min-height:112px;padding:6px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;animation:pop .45s cubic-bezier(.2,1.3,.4,1) both;animation-delay:calc(var(--i)*14ms);transition:transform .15s}
+.cell:hover{transform:scale(1.04);z-index:2}
+.cell.we{background:var(--we)}
+.nowe .cell.we{background:var(--surface)}
+.compact .cell{min-height:76px}
+.cell.empty{background:transparent;border:0;animation:none;min-height:0}
+.cell.now{border-color:var(--text);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--text)}
+.cell.dim{opacity:.35}
+.cell.hit{border-color:var(--k);background:color-mix(in srgb,var(--k) 14%,var(--surface));box-shadow:0 6px 18px color-mix(in srgb,var(--k) 40%,transparent)}
+.d{align-self:flex-start;margin-left:6px;font-weight:700;font-size:.95rem}
+.d small{display:none;font-weight:400;color:var(--muted)}
+.chm{position:absolute;top:6px;right:6px;font-size:.68rem;background:#f59e0b;color:#fff;border-radius:8px;padding:0 6px;font-weight:600}
+.row{display:flex;gap:2px;justify-content:center}
+.who{position:relative;display:flex;flex-direction:column;align-items:center;font-size:.72rem;font-weight:600;color:var(--k);line-height:1.1}
+.who svg{width:min(40px,100%);height:auto;aspect-ratio:1}
+.nonames .who span{display:none}
+.ex{position:absolute;top:-4px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:17px;height:17px;font-size:.72rem;display:grid;place-items:center;font-weight:700}
+.cell.hit .who:not(.me){opacity:.45}
+.cell.hit .who.me svg{animation:bob 1.6s ease-in-out infinite}
+label{display:block;font-weight:500;margin:10px 0 4px;font-size:.95rem}
+input,select,textarea{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:9px 12px}
+textarea{min-height:76px;resize:vertical}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{color:var(--muted);font-size:.92rem;margin:8px 0 0}
+.err{color:#ef4444;margin:6px 0 0}
+.ov{position:fixed;inset:0;background:rgba(20,16,40,.6);display:flex;align-items:flex-start;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 12px 20px;overflow:auto;z-index:50;animation:fade .2s both}
+.ov[hidden]{display:none}
+.pn{background:var(--surface);border-radius:24px;width:100%;max-width:640px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:pop .35s cubic-bezier(.2,1.3,.4,1) both}
+.pn h2{margin:0 0 8px}
+.pn .x{float:right;padding:4px 12px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.tabs button{padding:6px 14px}
+.tabs button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:transparent}
+.lst{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.exr{border:2px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.exr svg{width:38px;height:38px;flex:none}
+.exr .tx{flex:1;min-width:160px}
+.exr.done{opacity:.5}
+.exr .ac{display:flex;gap:6px;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:10px;margin:10px 0;font-weight:500}
+.chk input{width:22px;height:22px;flex:none}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:60;animation:pop .3s both}
+.noanim *{animation:none!important;transition:none!important}
+@keyframes flow{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes fade{from{opacity:0}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes grow{from{width:0}}
+@media (max-width:700px){
+ .dn,.cell.empty{display:none}
+ .grid{grid-template-columns:1fr}
+ .cell{flex-direction:row;align-items:center;min-height:0!important;padding:8px 12px;gap:10px}
+ .d{align-self:center;margin:0;min-width:92px}.d small{display:inline;margin-left:4px}
+ .row{gap:14px}.who{flex-direction:row;gap:6px;font-size:.95rem}.who svg{width:38px}
+ .chm{position:static}.f2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hero">
+ <div class="blob" style="width:160px;height:160px;left:-40px;top:20px"></div>
+ <div class="blob" style="width:90px;height:90px;right:12%;top:30px;animation-delay:-3s"></div>
+ <div class="blob" style="width:200px;height:200px;right:-60px;bottom:-80px;animation-delay:-5s"></div>
+ <div class="in">
+  <div class="topb"><button id="bSet" type="button">⚙️ Nastavení</button><button id="bAdm" type="button">🔐 Admin<span class="cnt" id="admCnt" hidden></span></button></div>
+  <h1>Směny moderátorů</h1>
+  <p>Listopad 2026 až březen 2027 · každý den slouží dva</p>
+  <div class="notice" id="notice" hidden></div>
+  <div class="today" id="today"></div>
+ </div>
+</header>
+<main>
+ <div class="panel">
+  <div class="mods" id="mods" role="group" aria-label="Vyber moderátora"></div>
+  <div class="months" id="months" role="group" aria-label="Měsíc"></div>
+  <div class="info" id="info"></div>
+  <div class="grid" id="grid"></div>
+  <p class="hint">Klikni na jméno a zvýrazní se jen jeho směny. Dnešní den má černý rámeček. Červený vykřičník značí omluvenku, oranžový štítek změnu směny.</p>
+ </div>
+ <div class="panel" id="excPanel">
+  <h2>Omluvenka</h2>
+  <p class="hint">Nemůžeš ve své směně? Pošli omluvenku, admin ji uvidí a domluví náhradu.</p>
+  <div class="f2">
+   <div><label for="eMod">Kdo se omlouvá</label><select id="eMod"></select></div>
+   <div><label for="eDate">Datum směny</label><input type="date" id="eDate" min="2026-11-01" max="2027-03-31"></div>
+  </div>
+  <label for="eWhy">Důvod</label><textarea id="eWhy" maxlength="200" placeholder="Např. nemoc, škola, výlet"></textarea>
+  <p style="margin:12px 0 0"><button class="go" id="eSend" type="button">Odeslat omluvenku</button></p>
+  <p class="hint" id="eMsg"></p>
+ </div>
+</main>
+<div class="ov" id="ov" hidden><div class="pn" id="pn" role="dialog" aria-modal="true"></div></div>
+<script>
+const PIN="140514";
+const M=["Xentro","Viriblox","Adamek","Dan","Tadeas"];
+const COL=["#3b82f6","#ec4899","#10b981","#f59e0b","#8b5cf6"];
+const PAIRS=[[0,1],[2,3],[4,0],[1,2],[3,4],[0,2],[1,3],[2,4],[0,3],[1,4]];
+const MN=["leden","únor","březen","duben","květen","červen","červenec","srpen","září","říjen","listopad","prosinec"];
+const DN=["Po","Út","St","Čt","Pá","So","Ne"],DL=["po","út","st","čt","pá","so","ne"];
+const months=[[2026,10],[2026,11],[2027,0],[2027,1],[2027,2]];
+const ACC=[
+ '<path d="M14 30a18 18 0 0 1 36 0" fill="none" stroke="#24203a" stroke-width="3.5"/><rect x="9" y="28" width="7" height="12" rx="3" fill="#24203a"/><rect x="48" y="28" width="7" height="12" rx="3" fill="#24203a"/>',
+ '<polygon points="32,3 35,11 43,11 37,16 39,24 32,19 25,24 27,16 21,11 29,11" fill="#ffd23f" stroke="#24203a" stroke-width="1.5"/>',
+ '<circle cx="24" cy="34" r="6.5" fill="none" stroke="#24203a" stroke-width="2.5"/><circle cx="40" cy="34" r="6.5" fill="none" stroke="#24203a" stroke-width="2.5"/><path d="M30.5 34h3" stroke="#24203a" stroke-width="2.5"/>',
+ '<path d="M13 28a19 19 0 0 1 38 0z" fill="#24203a"/><rect x="30" y="25" width="30" height="5" rx="2.5" fill="#24203a"/>',
+ '<path d="M32 17V7" stroke="#24203a" stroke-width="2.5"/><path d="M32 8c-3-5-9-1-5 3l5 4 5-4c4-4-2-8-5-3z" fill="#ff4d6d" stroke="#24203a" stroke-width="1.2"/>'
+];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const av=i=>`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="${COL[i]}"/><circle cx="32" cy="36" r="19" fill="#ffe0bd"/><circle cx="25" cy="34" r="2.6" fill="#24203a"/><circle cx="39" cy="34" r="2.6" fill="#24203a"/><path d="M25 43q7 7 14 0" fill="none" stroke="#24203a" stroke-width="2.5" stroke-linecap="round"/>${ACC[i]}</svg>`;
+const D0=Date.UTC(2026,10,1),END=Date.UTC(2027,2,31);
+const key=t=>new Date(t).toISOString().slice(0,10);
+const tOf=k=>Date.parse(k+"T00:00:00Z");
+const baseP=t=>PAIRS[Math.round((t-D0)/864e5)%PAIRS.length];
+let ov={},ex=[],cfg={},db=null,admin=false,adminTab=0;
+try{admin=sessionStorage.getItem("kmA")==="1"}catch(e){}
+function pairUTC(t){const o=ov[key(t)];return o&&Array.isArray(o.pair)&&o.pair.length===2?o.pair:baseP(t)}
+let P={theme:"auto",anim:true,names:true,we:true,compact:false,me:-1};
+try{Object.assign(P,JSON.parse(localStorage.getItem("kmP")||"{}"))}catch(e){}
+function applyP(){const r=document.documentElement,b=document.body;
+ if(P.theme==="auto")r.removeAttribute("data-theme");else r.dataset.theme=P.theme;
+ b.classList.toggle("noanim",!P.anim);b.classList.toggle("nonames",!P.names);b.classList.toggle("nowe",!P.we);b.classList.toggle("compact",!!P.compact)}
+function saveP(){try{localStorage.setItem("kmP",JSON.stringify(P))}catch(e){}applyP()}
+let sel=P.me,cur=0;
+const now=new Date(),nowU=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+{const i=months.findIndex(([y,m])=>y===now.getFullYear()&&m===now.getMonth());if(nowU>=D0&&nowU<=END&&i>=0)cur=i}
+function fmt(t){const d=new Date(t);return DL[(d.getUTCDay()+6)%7]+" "+d.getUTCDate()+". "+(d.getUTCMonth()+1)+"."}
+const exFor=(k,i)=>ex.find(e=>e.date===k&&e.mod===i&&e.status!=="done");
+function toast(s){const e=document.createElement("div");e.className="toast";e.textContent=s;document.body.appendChild(e);setTimeout(()=>e.remove(),2600)}
+function nextOf(i,from){for(let t=Math.max(from,D0);t<=END;t+=864e5)if(pairUTC(t).includes(i))return t;return null}
+
+function todayBar(){
+ const inR=nowU>=D0&&nowU<=END,base=inR?nowU:D0;
+ const mk=(t,lab,sub)=>`<div class="tcard"><div class="tl">${lab}<small>${sub}</small></div><div class="tp">${pairUTC(t).map(i=>`<div class="pp" style="color:${COL[i]}">${av(i)}${M[i]}</div>`).join("")}</div></div>`;
+ let h=mk(base,inR?"Dnes":"Začátek",fmt(base))+(base+864e5<=END?mk(base+864e5,inR?"Zítra":"Další den",fmt(base+864e5)):"");
+ if(P.me>=0){const n=nextOf(P.me,base);if(n!==null){const dd=Math.round((n-base)/864e5);h+=`<div class="tcard me"><div class="pp">${av(P.me)}</div><div class="tl">${M[P.me]}<small>další směna ${dd===0?"dnes":dd===1?"zítra":"za "+dd+" dní"} (${fmt(n)})</small></div></div>`}}
+ $("today").innerHTML=h;
+ const nt=$("notice");if(cfg.notice){nt.hidden=false;nt.textContent="📢 "+cfg.notice}else nt.hidden=true;
+ const c=ex.filter(e=>e.status!=="done").length;const b=$("admCnt");b.hidden=!(admin&&c);b.textContent=c;
+}
+function who(i,me,k){return `<span class="who${me?" me":""}" style="--k:${COL[i]}">${av(i)}<span>${M[i]}</span>${exFor(k,i)?'<b class="ex" title="Omluvenka">!</b>':""}</span>`}
+function render(){
+ const mb=$("mods");mb.innerHTML="";
+ const a=document.createElement("button");a.className="all";a.textContent="Všichni";a.setAttribute("aria-pressed",sel<0);a.onclick=()=>{sel=-1;render()};mb.appendChild(a);
+ M.forEach((n,i)=>{const b=document.createElement("button");b.className="mb";b.style.setProperty("--k",COL[i]);b.setAttribute("aria-pressed",sel===i);b.innerHTML=av(i)+n;b.onclick=()=>{sel=sel===i?-1:i;render()};mb.appendChild(b)});
+ const mo=$("months");mo.innerHTML="";
+ months.forEach(([y,m],i)=>{const b=document.createElement("button");b.className="mo";b.textContent=MN[m][0].toUpperCase()+MN[m].slice(1)+" "+y;b.setAttribute("aria-pressed",cur===i);b.onclick=()=>{cur=i;render()};mo.appendChild(b)});
+ const [y,m]=months[cur],days=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+6)%7;
+ const g=$("grid");g.innerHTML="";
+ DN.forEach(d=>{const e=document.createElement("div");e.className="dn";e.textContent=d;g.appendChild(e)});
+ for(let i=0;i<off;i++){const e=document.createElement("div");e.className="cell empty";g.appendChild(e)}
+ const cnt=[0,0,0,0,0];
+ for(let d=1;d<=days;d++){
+  const t=Date.UTC(y,m,d),k=key(t),p=pairUTC(t),dow=(off+d-1)%7;
+  p.forEach(i=>cnt[i]++);
+  const c=document.createElement("div");
+  c.className="cell"+(dow>4?" we":"")+(t===nowU?" now":"");
+  c.style.setProperty("--i",d);
+  if(sel>=0){if(p.includes(sel)){c.classList.add("hit");c.style.setProperty("--k",COL[sel])}else c.classList.add("dim")}
+  c.innerHTML=`<span class="d">${d}.<small>${DL[dow]}</small></span>${ov[k]?'<span class="chm">✎ změna</span>':""}<span class="row">${p.map(i=>who(i,i===sel,k)).join("")}</span>`;
+  g.appendChild(c);
+ }
+ const info=$("info");
+ if(sel<0){info.innerHTML=M.map((n,i)=>`<span class="bar" style="--k:${COL[i]}"><i style="width:${cnt[i]*3}px"></i>${n} ${cnt[i]}×</span>`).join("")}
+ else{
+  const nx=[];for(let t=Math.max(nowU,D0);t<=END&&nx.length<4;t+=864e5)if(pairUTC(t).includes(sel))nx.push(t);
+  info.innerHTML=`<b style="color:${COL[sel]}">${M[sel]}: ${cnt[sel]} směn v tomto měsíci.</b> Nejbližší: `+nx.map(t=>`<span class="nx" style="--k:${COL[sel]}">${fmt(t)}</span>`).join("")+`<button class="sm" id="ics" type="button">📥 Do kalendáře</button>`;
+  $("ics").onclick=exportIcs;
+ }
+}
+async function exportIcs(){
+ const dl=window.claude&&await claude.use("downloads").catch(()=>null);
+ if(!dl){toast("Stahování tu není dostupné");return}
+ const z=n=>String(n).padStart(2,"0"),ds=t=>key(t).replace(/-/g,"");
+ let s="BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Smeny//CS\r\n";
+ for(let t=D0;t<=END;t+=864e5){const p=pairUTC(t);if(p.includes(sel)){const o=M[p.find(i=>i!==sel)];s+=`BEGIN:VEVENT\r\nUID:${ds(t)}-${sel}@smeny\r\nDTSTAMP:20261101T000000Z\r\nDTSTART;VALUE=DATE:${ds(t)}\r\nDTEND;VALUE=DATE:${ds(t+864e5)}\r\nSUMMARY:Moderátorská směna (s ${o})\r\nEND:VEVENT\r\n`}}
+ s+="END:VCALENDAR\r\n";
+ try{await dl.save({filename:"smeny-"+M[sel].toLowerCase()+".ics",data:s})}catch(e){}
+}
+function refresh(){todayBar();render();renderAdminLists()}
+
+/* modal */
+function modal(h){$("pn").innerHTML=h;$("ov").hidden=false}
+function closeM(){$("ov").hidden=true;$("pn").innerHTML=""}
+$("ov").addEventListener("click",e=>{if(e.target===$("ov"))closeM()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeM()});
+
+/* settings */
+$("bSet").onclick=()=>{
+ modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Nastavení</h2>
+ <label for="sMe">Já jsem</label><select id="sMe"><option value="-1">Nikdo (zobrazit všechny)</option>${M.map((n,i)=>`<option value="${i}">${n}</option>`).join("")}</select>
+ <p class="hint">Stránka si tě zapamatuje, hned ti zvýrazní tvoje směny a ukáže, kdy máš další.</p>
+ <label for="sTh">Vzhled</label><select id="sTh"><option value="auto">Podle zařízení</option><option value="light">Světlý</option><option value="dark">Tmavý</option></select>
+ <label class="chk"><input type="checkbox" id="sAn">Animace</label>
+ <label class="chk"><input type="checkbox" id="sNa">Zobrazovat jména u postaviček</label>
+ <label class="chk"><input type="checkbox" id="sWe">Zvýraznit víkendy</label>
+ <label class="chk"><input type="checkbox" id="sCo">Kompaktní kalendář</label>
+ <p class="hint">Nastavení se ukládá jen v tomhle prohlížeči.</p>`);
+ $("cl").onclick=closeM;$("sMe").value=P.me;$("sTh").value=P.theme;$("sAn").checked=P.anim;$("sNa").checked=P.names;$("sWe").checked=P.we;$("sCo").checked=P.compact;
+ $("sMe").onchange=e=>{P.me=+e.target.value;sel=P.me;saveP();$("eMod").value=P.me>=0?P.me:$("eMod").value;refresh()};
+ $("sTh").onchange=e=>{P.theme=e.target.value;saveP()};
+ $("sAn").onchange=e=>{P.anim=e.target.checked;saveP()};
+ $("sNa").onchange=e=>{P.names=e.target.checked;saveP()};
+ $("sWe").onchange=e=>{P.we=e.target.checked;saveP()};
+ $("sCo").onchange=e=>{P.compact=e.target.checked;saveP()};
+};
+
+/* excuse form */
+$("eMod").innerHTML=M.map((n,i)=>`<option value="${i}">${n}</option>`).join("");
+if(P.me>=0)$("eMod").value=P.me;
+$("eSend").onclick=async()=>{
+ const m=+$("eMod").value,d=$("eDate").value,w=$("eWhy").value.trim(),msg=$("eMsg");
+ if(!db){msg.textContent="Omluvenky teď nejdou odeslat (stránka není propojená s úložištěm).";return}
+ if(!d||tOf(d)<D0||tOf(d)>END){msg.textContent="Vyber datum od 1. 11. 2026 do 31. 3. 2027.";return}
+ if(w.length<3){msg.textContent="Napiš krátce důvod.";return}
+ $("eSend").disabled=true;
+ try{await db.collection("excuses").add({mod:m,date:d,reason:w.slice(0,200),ts:Date.now(),status:"new"});$("eWhy").value="";msg.textContent="Omluvenka odeslána, admin ji uvidí.";toast("Omluvenka odeslána ✔")}
+ catch(e){msg.textContent="Odeslání se nepovedlo. Zkus to znovu."}
+ $("eSend").disabled=false;
+};
+
+/* admin */
+$("bAdm").onclick=()=>{
+ if(admin){openAdmin();return}
+ modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Admin panel</h2><label for="pin">Kód</label><input id="pin" type="password" inputmode="numeric" autocomplete="off"><p style="margin:12px 0 0"><button class="go" id="pinOk" type="button">Odemknout</button></p><p class="err" id="pinErr"></p>`);
+ $("cl").onclick=closeM;$("pin").focus();
+ const chk=()=>{if($("pin").value===PIN){admin=true;try{sessionStorage.setItem("kmA","1")}catch(e){}todayBar();openAdmin()}else{$("pinErr").textContent="Špatný kód."}};
+ $("pinOk").onclick=chk;$("pin").onkeydown=e=>{if(e.key==="Enter")chk()};
+};
+function openAdmin(){
+ const tabs=["Změna směn","Omluvenky","Oznámení"];
+ modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Admin panel</h2>
+ <div class="tabs" id="tabs">${tabs.map((t,i)=>`<button type="button" data-t="${i}" aria-pressed="${i===adminTab}">${t}</button>`).join("")}<button type="button" id="lock">Zamknout</button></div>
+ ${db?"":'<p class="err">Úložiště není dostupné, změny se neuloží.</p>'}
+ <section id="t0"><p class="hint">Vyber den (nebo od–do), kdo vypadne a kdo místo něj nastoupí.</p>
+  <div class="f2"><div><label for="aDate">Od data</label><input type="date" id="aDate" min="2026-11-01" max="2027-03-31"></div><div><label for="aTo">Do data (nepovinné)</label><input type="date" id="aTo" min="2026-11-01" max="2027-03-31"></div></div>
+  <p class="hint">Ten den slouží: <b id="aCur">–</b></p>
+  <div class="f2"><div><label for="aOut">Místo koho</label><select id="aOut"></select></div><div><label for="aIn">Dej koho</label><select id="aIn"></select></div></div>
+  <p style="margin:12px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="go" id="aSwap" type="button">Vyměnit</button><button class="danger" id="aReset" type="button">Vrátit původní</button></p>
+  <h3>Provedené změny</h3><div class="lst" id="chgList"></div></section>
+ <section id="t1"><div class="lst" id="exList"></div></section>
+ <section id="t2"><label for="nTxt">Oznámení nahoře na stránce</label><textarea id="nTxt" maxlength="200" placeholder="Např. O víkendu se směny přehazují, sleduj omluvenky."></textarea>
+  <p style="margin:12px 0 0;display:flex;gap:8px"><button class="go" id="nSave" type="button">Uložit oznámení</button><button id="nDel" type="button">Smazat</button></p></section>`);
+ $("cl").onclick=closeM;
+ $("lock").onclick=()=>{admin=false;try{sessionStorage.removeItem("kmA")}catch(e){}closeM();todayBar()};
+ const showT=n=>{adminTab=n;[0,1,2].forEach(i=>{$("t"+i).hidden=i!==n});$("tabs").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.t===n))};
+ $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b)showT(+b.dataset.t)});
+ showT(adminTab);
+ $("aDate").value=nowU>=D0&&nowU<=END?key(nowU):key(D0);
+ const upd=()=>{const k=$("aDate").value;if(!k)return;const p=pairUTC(tOf(k));$("aCur").textContent=p.map(i=>M[i]).join(" + ");$("aOut").innerHTML=p.map(i=>`<option value="${i}">${M[i]}</option>`).join("");$("aIn").innerHTML=M.map((n,i)=>p.includes(i)?"":`<option value="${i}">${n}</option>`).join("")};
+ $("aDate").onchange=upd;upd();
+ const range=()=>{const a=$("aDate").value,b=$("aTo").value||a;return a?[tOf(a),tOf(b)]:null};
+ $("aSwap").onclick=async()=>{
+  if(!db)return toast("Úložiště není dostupné");const r=range();if(!r)return;
+  const out=+$("aOut").value,inn=+$("aIn").value;let n=0;$("aSwap").disabled=true;
+  try{for(let t=r[0];t<=r[1];t+=864e5){if(t<D0||t>END)continue;const p=pairUTC(t);if(!p.includes(out)||p.includes(inn))continue;await db.doc("overrides/"+key(t)).set({pair:p.map(i=>i===out?inn:i),ts:Date.now()});n++}toast(n?`Změněno dní: ${n}`:"Nic se nezměnilo")}catch(e){toast("Uložení se nepovedlo")}
+  $("aSwap").disabled=false;upd();
+ };
+ $("aReset").onclick=async()=>{
+  if(!db)return;const r=range();if(!r)return;let n=0;
+  try{for(let t=r[0];t<=r[1];t+=864e5){if(ov[key(t)]){await db.doc("overrides/"+key(t)).delete();n++}}toast(n?`Vráceno dní: ${n}`:"Tady žádná změna není")}catch(e){toast("Nepovedlo se")}
+  upd();
+ };
+ $("chgList").addEventListener("click",async e=>{const b=e.target.closest("[data-del]");if(b&&db){try{await db.doc("overrides/"+b.dataset.del).delete()}catch(x){toast("Nepovedlo se")}}});
+ $("exList").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-a]");if(!b||!db)return;const id=b.dataset.id,a=b.dataset.a,x=ex.find(q=>q.id===id);if(!x)return;
+  try{
+   if(a==="done")await db.doc("excuses/"+id).update({status:x.status==="done"?"new":"done"});
+   else if(a==="del")await db.doc("excuses/"+id).delete();
+   else if(a==="rep"){showT(0);$("aDate").value=x.date;$("aTo").value="";upd();$("aOut").value=x.mod;toast("Vyber náhradu a dej Vyměnit")}
+  }catch(err){toast("Nepovedlo se")}
+ });
+ $("nTxt").value=cfg.notice||"";
+ $("nSave").onclick=async()=>{if(!db)return;try{await db.doc("settings/main").set({notice:$("nTxt").value.trim().slice(0,200)});toast("Oznámení uloženo")}catch(e){toast("Nepovedlo se")}};
+ $("nDel").onclick=async()=>{if(!db)return;try{await db.doc("settings/main").set({notice:""});$("nTxt").value="";toast("Oznámení smazáno")}catch(e){toast("Nepovedlo se")}};
+ renderAdminLists();
+}
+function renderAdminLists(){
+ const cl=$("chgList"),el=$("exList");if(!cl||!el)return;
+ const ks=Object.keys(ov).sort();
+ cl.innerHTML=ks.length?ks.map(k=>{const t=tOf(k),p=ov[k].pair||[],b=baseP(t);return `<div class="exr"><div class="tx"><b>${fmt(t)}</b>: ${p.map(i=>M[i]).join(" + ")}<br><span class="hint">původně ${b.map(i=>M[i]).join(" + ")}</span></div><div class="ac"><button class="sm danger" data-del="${k}" type="button">Vrátit</button></div></div>`}).join(""):'<p class="hint">Zatím žádné změny.</p>';
+ const l=[...ex].sort((a,b)=>(a.status==="done")-(b.status==="done")||b.ts-a.ts);
+ el.innerHTML=l.length?l.map(e=>{const inP=pairUTC(tOf(e.date)).includes(e.mod);return `<div class="exr ${e.status==="done"?"done":""}">${av(e.mod)}<div class="tx"><b>${esc(M[e.mod]||"?")}</b> · ${fmt(tOf(e.date))}${inP?"":" (už nahrazen)"}<br>${esc(e.reason||"")}</div><div class="ac">${inP&&e.status!=="done"?`<button class="sm" data-a="rep" data-id="${e.id}" type="button">Nahradit</button>`:""}<button class="sm" data-a="done" data-id="${e.id}" type="button">${e.status==="done"?"Otevřít":"Vyřešeno"}</button><button class="sm danger" data-a="del" data-id="${e.id}" type="button">Smazat</button></div></div>`}).join(""):'<p class="hint">Žádné omluvenky.</p>';
+}
+
+/* start */
+applyP();todayBar();render();
+(async()=>{
+ try{
+  const u=window.claude?claude.use("db"):Promise.resolve(null);
+  db=await Promise.race([u,new Promise(r=>setTimeout(()=>r(null),10000))])||null;
+ }catch(e){db=null}
+ if(!db){$("eMsg").textContent="Úložiště není dostupné, omluvenky a změny směn teď nefungují.";return}
+ const noop=()=>{};
+ db.collection("overrides").onSnapshot(s=>{ov={};s.docs.forEach(d=>ov[d.id]=d.data());refresh()},noop);
+ db.collection("excuses").onSnapshot(s=>{ex=s.docs.map(d=>Object.assign({id:d.id},d.data()));refresh()},noop);
+ db.doc("settings/main").onSnapshot(s=>{cfg=s.exists?s.data():{};todayBar()},noop);
+})();
+</script>
+</body>
+</html>
