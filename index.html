@@ -163,11 +163,10 @@ textarea{min-height:76px;resize:vertical}
 <div class="ov" id="ov" hidden><div class="pn" id="pn" role="dialog" aria-modal="true"></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
 /* ===== NASTAVENI: sem vloz udaje z Firebase (viz navod) ===== */
 const FIREBASE_CONFIG={apiKey:"AIzaSyDLqBN4IZJi1JSg3kOEVUvPZw18G3AW2J4",authDomain:"mejdrixkalendar.firebaseapp.com",projectId:"mejdrixkalendar",databaseURL:"https://mejdrixkalendar-default-rtdb.firebaseio.com",appId:"1:744433737363:web:9415dc217799efb7ca3766"};
-const ADMIN_EMAIL="admin@smeny.web"; /* heslo k tomuto uctu = tvuj admin kod */
+const PIN="140514"; /* admin kod */
 const BASE=["Xentro","Viriblox","Adamek","Dan","Tadeas"];
 const M=[...BASE];
 const XC=["#ef4444","#06b6d4","#84cc16","#f97316","#d946ef","#14b8a6","#6366f1","#eab308","#0ea5e9"];
@@ -211,6 +210,7 @@ function setMods(l){
 }
 const stamp=()=>{lastSave=new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"})};
 let ov={},ex=[],cfg={},db=null,admin=false,adminTab=0;
+try{admin=sessionStorage.getItem("kmA")==="1"}catch(e){}
 function pairUTC(t){const o=ov[key(t)];return o&&Array.isArray(o.pair)&&o.pair.length===2?o.pair:baseP(t)}
 let P={theme:"auto",anim:true,names:true,we:true,compact:false,me:-1};
 try{Object.assign(P,JSON.parse(localStorage.getItem("kmP")||"{}"))}catch(e){}
@@ -319,7 +319,7 @@ $("bAdm").onclick=()=>{
  if(admin){openAdmin();return}
  modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Admin panel</h2><label for="pin">Kód</label><input id="pin" type="password" inputmode="numeric" autocomplete="off"><p style="margin:12px 0 0"><button class="go" id="pinOk" type="button">Odemknout</button></p><p class="err" id="pinErr"></p>`);
  $("cl").onclick=closeM;$("pin").focus();
- const chk=async()=>{if(!fb){$("pinErr").textContent="Web ještě není propojený s databází (viz návod).";return}try{await auth.signInWithEmailAndPassword(ADMIN_EMAIL,$("pin").value);admin=true;subEx();todayBar();openAdmin()}catch(e){const c=e&&e.code||String(e);const m={"auth/invalid-credential":"Špatný kód, nebo účet admin@smeny.web ve Firebase ještě neexistuje.","auth/user-not-found":"Účet admin@smeny.web ve Firebase ještě neexistuje.","auth/wrong-password":"Špatný kód.","auth/operation-not-allowed":"V Authentication není zapnuté Email/Password.","auth/invalid-api-key":"Špatný apiKey v index.html.","auth/api-key-not-valid.-please-pass-a-valid-api-key.":"Špatný apiKey v index.html.","auth/network-request-failed":"Chyba sítě.","auth/too-many-requests":"Moc pokusů, počkej chvíli."};$("pinErr").textContent=(m[c]||"Chyba")+" ("+c+")"}};
+ const chk=()=>{if($("pin").value===PIN){admin=true;try{sessionStorage.setItem("kmA","1")}catch(e){}subEx();todayBar();openAdmin()}else{$("pinErr").textContent="Špatný kód."}};
  $("pinOk").onclick=chk;$("pin").onkeydown=e=>{if(e.key==="Enter")chk()};
 };
 function openAdmin(){
@@ -341,7 +341,7 @@ function openAdmin(){
   <p class="hint">Nový moderátor je zprvu jen na záskoky (vybereš ho v záložce Změna směn). Zapneš-li mu Ve střídání, zařadí se do pravidelného rozpisu a celý rozpis se přepočítá.</p>
   <div class="lst" id="modList"></div></section>`);
  $("cl").onclick=closeM;
- $("lock").onclick=()=>{admin=false;if(auth)auth.signOut();closeM();refresh()};
+ $("lock").onclick=()=>{admin=false;try{sessionStorage.removeItem("kmA")}catch(e){}if(unsubEx){unsubEx();unsubEx=null}ex=[];closeM();refresh()};
  const showT=n=>{adminTab=n;[0,1,2,3].forEach(i=>{$("t"+i).hidden=i!==n});$("tabs").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.t===n))};
  $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b)showT(+b.dataset.t)});
  showT(adminTab);
@@ -418,12 +418,12 @@ function subEx(){
 }
 (function(){
  if(typeof firebase==="undefined"||FIREBASE_CONFIG.apiKey==="VLOZ_SEM"){$("eMsg").textContent="Web ještě není propojený s databází (viz návod). Zatím funguje jen zobrazení.";renderSave();return}
- try{firebase.initializeApp(FIREBASE_CONFIG);db=rtdbShim(firebase.database());auth=firebase.auth();fb=true}catch(e){$("eMsg").textContent="Připojení k databázi se nepovedlo, zkontroluj nastavení.";return}
+ try{firebase.initializeApp(FIREBASE_CONFIG);db=rtdbShim(firebase.database());fb=true}catch(e){$("eMsg").textContent="Připojení k databázi se nepovedlo, zkontroluj nastavení.";return}
  const noop=()=>{};
  db.collection("overrides").onSnapshot(q=>{ov={};q.docs.forEach(d=>ov[d.id]=d.data());refresh()},noop);
  db.doc("settings/main").onSnapshot(q=>{cfg=q.exists?q.data():{};todayBar()},noop);
  db.doc("settings/mods").onSnapshot(q=>{const d=q.exists?q.data():null;const l=d&&Array.isArray(d.list)&&d.list.length>=5?d.list:BASE.map(n=>({n,s:false,r:true,a:true}));setMods(l);refresh()},noop);
- auth.onAuthStateChanged(u=>{admin=!!u;if(admin)subEx();else{if(unsubEx){unsubEx();unsubEx=null}ex=[]}refresh()});
+ if(admin)subEx();
 })();
 </script>
 </body>
