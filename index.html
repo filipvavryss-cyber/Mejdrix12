@@ -100,6 +100,7 @@ textarea{min-height:76px;resize:vertical}
 .chk{display:flex;align-items:center;gap:10px;margin:10px 0;font-weight:500}
 .chk input{width:22px;height:22px;flex:none}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:60;animation:pop .3s both}
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;background:var(--bg);border:2px solid var(--line);font-size:.9rem;margin:0 6px 6px 0}.pill.ok{border-color:#10b981;color:#10b981}.pill.bad{border-color:#ef4444;color:#ef4444}
 .noanim *{animation:none!important;transition:none!important}
 @keyframes flow{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
@@ -150,11 +151,32 @@ textarea{min-height:76px;resize:vertical}
   <p style="margin:12px 0 0"><button class="go" id="eSend" type="button">Odeslat omluvenku</button></p>
   <p class="hint" id="eMsg"></p>
  </div>
+ <div class="panel" id="svPanel"><h2>Ukládání</h2>
+  <div id="svBox"></div>
+  <p style="margin:10px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="go" id="bBak" type="button">💾 Stáhnout zálohu</button><button id="bRes" type="button">📤 Obnovit ze zálohy</button><input type="file" id="fRes" accept=".json" hidden></p>
+  <p class="hint">Změny směn, omluvenky, moderátoři i oznámení se ukládají samy ve chvíli, kdy je uděláš. Záloha je navíc pro jistotu, obnova je jen pro odemčený admin panel.</p></div>
+ <div class="panel" id="invPanel"><h2>Pozvánky</h2>
+  <p class="hint">Pošli moderátorům tenhle text. Žádný účet nepotřebují, omluvenku pošlou rovnou na stránce.</p>
+  <label for="invTxt">Text pozvánky</label><textarea id="invTxt" readonly></textarea>
+  <p style="margin:12px 0 0"><button class="go" id="bInv" type="button">📋 Zkopírovat pozvánku</button></p></div>
 </main>
 <div class="ov" id="ov" hidden><div class="pn" id="pn" role="dialog" aria-modal="true"></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
-const PIN="140514";
-const M=["Xentro","Viriblox","Adamek","Dan","Tadeas"];
+/* ===== NASTAVENI: sem vloz udaje z Firebase (viz navod) ===== */
+const FIREBASE_CONFIG={apiKey:"AIzaSyDLqBN4IZJi1JSg3kOEVUvPZw18G3AW2J4",authDomain:"mejdrixkalendar.firebaseapp.com",projectId:"mejdrixkalendar",databaseURL:"https://mejdrixkalendar-default-rtdb.firebaseio.com",appId:"1:744433737363:web:9415dc217799efb7ca3766"};
+const ADMIN_EMAIL="admin@smeny.web"; /* heslo k tomuto uctu = tvuj admin kod */
+const BASE=["Xentro","Viriblox","Adamek","Dan","Tadeas"];
+const M=[...BASE];
+const XC=["#ef4444","#06b6d4","#84cc16","#f97316","#d946ef","#14b8a6","#6366f1","#eab308","#0ea5e9"];
+let MODS=BASE.map(n=>({n,s:false,r:true,a:true}));
+const STAR='<circle cx="32" cy="32" r="29.5" fill="none" stroke="#ffd23f" stroke-width="3.5"/><g transform="translate(40 40) scale(.7)"><polygon points="16,0 20,11 32,11 22,18 26,30 16,23 6,30 10,18 0,11 12,11" fill="#ffd23f" stroke="#24203a" stroke-width="2"/></g>';
+const LINK=location.href.split("#")[0];
+let fb=false,auth=null,unsubEx=null;
+function saveFile(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:type||"text/plain"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+let lastSave="";
 const COL=["#3b82f6","#ec4899","#10b981","#f59e0b","#8b5cf6"];
 const PAIRS=[[0,1],[2,3],[4,0],[1,2],[3,4],[0,2],[1,3],[2,4],[0,3],[1,4]];
 const MN=["leden","únor","březen","duben","květen","červen","červenec","srpen","září","říjen","listopad","prosinec"];
@@ -169,13 +191,26 @@ const ACC=[
 ];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const av=i=>`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="${COL[i]}"/><circle cx="32" cy="36" r="19" fill="#ffe0bd"/><circle cx="25" cy="34" r="2.6" fill="#24203a"/><circle cx="39" cy="34" r="2.6" fill="#24203a"/><path d="M25 43q7 7 14 0" fill="none" stroke="#24203a" stroke-width="2.5" stroke-linecap="round"/>${ACC[i]}</svg>`;
+const av=i=>`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="${COL[i]}"/><circle cx="32" cy="36" r="19" fill="#ffe0bd"/><circle cx="25" cy="34" r="2.6" fill="#24203a"/><circle cx="39" cy="34" r="2.6" fill="#24203a"/><path d="M25 43q7 7 14 0" fill="none" stroke="#24203a" stroke-width="2.5" stroke-linecap="round"/>${ACC[i%5]}${MODS[i]&&MODS[i].s?STAR:""}</svg>`;
 const D0=Date.UTC(2026,10,1),END=Date.UTC(2027,2,31);
 const key=t=>new Date(t).toISOString().slice(0,10);
 const tOf=k=>Date.parse(k+"T00:00:00Z");
-const baseP=t=>PAIRS[Math.round((t-D0)/864e5)%PAIRS.length];
+let PR=PAIRS;
+const baseP=t=>PR[Math.round((t-D0)/864e5)%PR.length];
+function ids(){return MODS.map((m,i)=>m.a?i:-1).filter(i=>i>=0)}
+function buildPairs(){
+ const rot=MODS.map((m,i)=>m.r&&m.a?i:-1).filter(i=>i>=0);
+ if(rot.join()==="0,1,2,3,4"||rot.length<2){PR=PAIRS;return}
+ const C=[];for(let a=0;a<rot.length;a++)for(let b=a+1;b<rot.length;b++)C.push([rot[a],rot[b]]);
+ const g=(x,y)=>y?g(y,x%y):x;let s=Math.max(1,Math.round(C.length*.38));while(g(s,C.length)!==1)s++;
+ PR=C.map((_,k)=>C[(k*s)%C.length]);
+}
+function setMods(l){
+ MODS=l.map(m=>({n:String(m.n||"?").slice(0,20),s:!!m.s,r:!!m.r,a:m.a!==false}));
+ M.length=0;MODS.forEach((m,i)=>{M.push(m.n);if(!COL[i])COL[i]=XC[(i-5)%XC.length]});buildPairs();
+}
+const stamp=()=>{lastSave=new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"})};
 let ov={},ex=[],cfg={},db=null,admin=false,adminTab=0;
-try{admin=sessionStorage.getItem("kmA")==="1"}catch(e){}
 function pairUTC(t){const o=ov[key(t)];return o&&Array.isArray(o.pair)&&o.pair.length===2?o.pair:baseP(t)}
 let P={theme:"auto",anim:true,names:true,we:true,compact:false,me:-1};
 try{Object.assign(P,JSON.parse(localStorage.getItem("kmP")||"{}"))}catch(e){}
@@ -204,14 +239,14 @@ function who(i,me,k){return `<span class="who${me?" me":""}" style="--k:${COL[i]
 function render(){
  const mb=$("mods");mb.innerHTML="";
  const a=document.createElement("button");a.className="all";a.textContent="Všichni";a.setAttribute("aria-pressed",sel<0);a.onclick=()=>{sel=-1;render()};mb.appendChild(a);
- M.forEach((n,i)=>{const b=document.createElement("button");b.className="mb";b.style.setProperty("--k",COL[i]);b.setAttribute("aria-pressed",sel===i);b.innerHTML=av(i)+n;b.onclick=()=>{sel=sel===i?-1:i;render()};mb.appendChild(b)});
+ ids().forEach(i=>{const n=M[i],b=document.createElement("button");b.className="mb";b.style.setProperty("--k",COL[i]);b.setAttribute("aria-pressed",sel===i);b.innerHTML=av(i)+n;b.onclick=()=>{sel=sel===i?-1:i;render()};mb.appendChild(b)});
  const mo=$("months");mo.innerHTML="";
  months.forEach(([y,m],i)=>{const b=document.createElement("button");b.className="mo";b.textContent=MN[m][0].toUpperCase()+MN[m].slice(1)+" "+y;b.setAttribute("aria-pressed",cur===i);b.onclick=()=>{cur=i;render()};mo.appendChild(b)});
  const [y,m]=months[cur],days=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+6)%7;
  const g=$("grid");g.innerHTML="";
  DN.forEach(d=>{const e=document.createElement("div");e.className="dn";e.textContent=d;g.appendChild(e)});
  for(let i=0;i<off;i++){const e=document.createElement("div");e.className="cell empty";g.appendChild(e)}
- const cnt=[0,0,0,0,0];
+ const cnt=M.map(()=>0);
  for(let d=1;d<=days;d++){
   const t=Date.UTC(y,m,d),k=key(t),p=pairUTC(t),dow=(off+d-1)%7;
   p.forEach(i=>cnt[i]++);
@@ -223,7 +258,7 @@ function render(){
   g.appendChild(c);
  }
  const info=$("info");
- if(sel<0){info.innerHTML=M.map((n,i)=>`<span class="bar" style="--k:${COL[i]}"><i style="width:${cnt[i]*3}px"></i>${n} ${cnt[i]}×</span>`).join("")}
+ if(sel<0){info.innerHTML=ids().map(i=>`<span class="bar" style="--k:${COL[i]}"><i style="width:${cnt[i]*3}px"></i>${M[i]} ${cnt[i]}×</span>`).join("")}
  else{
   const nx=[];for(let t=Math.max(nowU,D0);t<=END&&nx.length<4;t+=864e5)if(pairUTC(t).includes(sel))nx.push(t);
   info.innerHTML=`<b style="color:${COL[sel]}">${M[sel]}: ${cnt[sel]} směn v tomto měsíci.</b> Nejbližší: `+nx.map(t=>`<span class="nx" style="--k:${COL[sel]}">${fmt(t)}</span>`).join("")+`<button class="sm" id="ics" type="button">📥 Do kalendáře</button>`;
@@ -231,15 +266,13 @@ function render(){
  }
 }
 async function exportIcs(){
- const dl=window.claude&&await claude.use("downloads").catch(()=>null);
- if(!dl){toast("Stahování tu není dostupné");return}
  const z=n=>String(n).padStart(2,"0"),ds=t=>key(t).replace(/-/g,"");
  let s="BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Smeny//CS\r\n";
  for(let t=D0;t<=END;t+=864e5){const p=pairUTC(t);if(p.includes(sel)){const o=M[p.find(i=>i!==sel)];s+=`BEGIN:VEVENT\r\nUID:${ds(t)}-${sel}@smeny\r\nDTSTAMP:20261101T000000Z\r\nDTSTART;VALUE=DATE:${ds(t)}\r\nDTEND;VALUE=DATE:${ds(t+864e5)}\r\nSUMMARY:Moderátorská směna (s ${o})\r\nEND:VEVENT\r\n`}}
  s+="END:VCALENDAR\r\n";
- try{await dl.save({filename:"smeny-"+M[sel].toLowerCase()+".ics",data:s})}catch(e){}
+ saveFile("smeny-"+M[sel].toLowerCase()+".ics",s,"text/calendar");
 }
-function refresh(){todayBar();render();renderAdminLists()}
+function refresh(){stamp();fillEMod();todayBar();render();renderAdminLists();renderMods();renderSave()}
 
 /* modal */
 function modal(h){$("pn").innerHTML=h;$("ov").hidden=false}
@@ -250,7 +283,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeM()});
 /* settings */
 $("bSet").onclick=()=>{
  modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Nastavení</h2>
- <label for="sMe">Já jsem</label><select id="sMe"><option value="-1">Nikdo (zobrazit všechny)</option>${M.map((n,i)=>`<option value="${i}">${n}</option>`).join("")}</select>
+ <label for="sMe">Já jsem</label><select id="sMe"><option value="-1">Nikdo (zobrazit všechny)</option>${ids().map(i=>`<option value="${i}">${M[i]}</option>`).join("")}</select>
  <p class="hint">Stránka si tě zapamatuje, hned ti zvýrazní tvoje směny a ukáže, kdy máš další.</p>
  <label for="sTh">Vzhled</label><select id="sTh"><option value="auto">Podle zařízení</option><option value="light">Světlý</option><option value="dark">Tmavý</option></select>
  <label class="chk"><input type="checkbox" id="sAn">Animace</label>
@@ -268,8 +301,8 @@ $("bSet").onclick=()=>{
 };
 
 /* excuse form */
-$("eMod").innerHTML=M.map((n,i)=>`<option value="${i}">${n}</option>`).join("");
-if(P.me>=0)$("eMod").value=P.me;
+function fillEMod(){const v=$("eMod").value;$("eMod").innerHTML=ids().map(i=>`<option value="${i}">${M[i]}</option>`).join("");if(v&&ids().includes(+v))$("eMod").value=v;else if(P.me>=0&&ids().includes(P.me))$("eMod").value=P.me}
+fillEMod();
 $("eSend").onclick=async()=>{
  const m=+$("eMod").value,d=$("eDate").value,w=$("eWhy").value.trim(),msg=$("eMsg");
  if(!db){msg.textContent="Omluvenky teď nejdou odeslat (stránka není propojená s úložištěm).";return}
@@ -286,11 +319,11 @@ $("bAdm").onclick=()=>{
  if(admin){openAdmin();return}
  modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Admin panel</h2><label for="pin">Kód</label><input id="pin" type="password" inputmode="numeric" autocomplete="off"><p style="margin:12px 0 0"><button class="go" id="pinOk" type="button">Odemknout</button></p><p class="err" id="pinErr"></p>`);
  $("cl").onclick=closeM;$("pin").focus();
- const chk=()=>{if($("pin").value===PIN){admin=true;try{sessionStorage.setItem("kmA","1")}catch(e){}todayBar();openAdmin()}else{$("pinErr").textContent="Špatný kód."}};
+ const chk=async()=>{if(!fb){$("pinErr").textContent="Web ještě není propojený s databází (viz návod).";return}try{await auth.signInWithEmailAndPassword(ADMIN_EMAIL,$("pin").value);admin=true;subEx();todayBar();openAdmin()}catch(e){$("pinErr").textContent="Špatný kód."}};
  $("pinOk").onclick=chk;$("pin").onkeydown=e=>{if(e.key==="Enter")chk()};
 };
 function openAdmin(){
- const tabs=["Změna směn","Omluvenky","Oznámení"];
+ const tabs=["Změna směn","Omluvenky","Oznámení","Moderátoři"];
  modal(`<button class="x" id="cl" type="button">Zavřít</button><h2>Admin panel</h2>
  <div class="tabs" id="tabs">${tabs.map((t,i)=>`<button type="button" data-t="${i}" aria-pressed="${i===adminTab}">${t}</button>`).join("")}<button type="button" id="lock">Zamknout</button></div>
  ${db?"":'<p class="err">Úložiště není dostupné, změny se neuloží.</p>'}
@@ -302,14 +335,18 @@ function openAdmin(){
   <h3>Provedené změny</h3><div class="lst" id="chgList"></div></section>
  <section id="t1"><div class="lst" id="exList"></div></section>
  <section id="t2"><label for="nTxt">Oznámení nahoře na stránce</label><textarea id="nTxt" maxlength="200" placeholder="Např. O víkendu se směny přehazují, sleduj omluvenky."></textarea>
-  <p style="margin:12px 0 0;display:flex;gap:8px"><button class="go" id="nSave" type="button">Uložit oznámení</button><button id="nDel" type="button">Smazat</button></p></section>`);
+  <p style="margin:12px 0 0;display:flex;gap:8px"><button class="go" id="nSave" type="button">Uložit oznámení</button><button id="nDel" type="button">Smazat</button></p></section>
+ <section id="t3"><p class="hint">Přidej moderátora, dej mu hvězdičku (top) a rozhodni, jestli je ve střídání.</p>
+  <div class="f2"><div><label for="mName">Jméno nového moderátora</label><input id="mName" maxlength="20"></div><div style="align-self:end"><button class="go" id="mAdd" type="button">Přidat</button></div></div>
+  <p class="hint">Nový moderátor je zprvu jen na záskoky (vybereš ho v záložce Změna směn). Zapneš-li mu Ve střídání, zařadí se do pravidelného rozpisu a celý rozpis se přepočítá.</p>
+  <div class="lst" id="modList"></div></section>`);
  $("cl").onclick=closeM;
- $("lock").onclick=()=>{admin=false;try{sessionStorage.removeItem("kmA")}catch(e){}closeM();todayBar()};
- const showT=n=>{adminTab=n;[0,1,2].forEach(i=>{$("t"+i).hidden=i!==n});$("tabs").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.t===n))};
+ $("lock").onclick=()=>{admin=false;if(auth)auth.signOut();closeM();refresh()};
+ const showT=n=>{adminTab=n;[0,1,2,3].forEach(i=>{$("t"+i).hidden=i!==n});$("tabs").querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.t===n))};
  $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b)showT(+b.dataset.t)});
  showT(adminTab);
  $("aDate").value=nowU>=D0&&nowU<=END?key(nowU):key(D0);
- const upd=()=>{const k=$("aDate").value;if(!k)return;const p=pairUTC(tOf(k));$("aCur").textContent=p.map(i=>M[i]).join(" + ");$("aOut").innerHTML=p.map(i=>`<option value="${i}">${M[i]}</option>`).join("");$("aIn").innerHTML=M.map((n,i)=>p.includes(i)?"":`<option value="${i}">${n}</option>`).join("")};
+ const upd=()=>{const k=$("aDate").value;if(!k)return;const p=pairUTC(tOf(k));$("aCur").textContent=p.map(i=>M[i]).join(" + ");$("aOut").innerHTML=p.map(i=>`<option value="${i}">${M[i]}</option>`).join("");$("aIn").innerHTML=ids().map(i=>p.includes(i)?"":`<option value="${i}">${M[i]}</option>`).join("")};
  $("aDate").onchange=upd;upd();
  const range=()=>{const a=$("aDate").value,b=$("aTo").value||a;return a?[tOf(a),tOf(b)]:null};
  $("aSwap").onclick=async()=>{
@@ -332,11 +369,24 @@ function openAdmin(){
    else if(a==="rep"){showT(0);$("aDate").value=x.date;$("aTo").value="";upd();$("aOut").value=x.mod;toast("Vyber náhradu a dej Vyměnit")}
   }catch(err){toast("Nepovedlo se")}
  });
+ bindMods();
  $("nTxt").value=cfg.notice||"";
  $("nSave").onclick=async()=>{if(!db)return;try{await db.doc("settings/main").set({notice:$("nTxt").value.trim().slice(0,200)});toast("Oznámení uloženo")}catch(e){toast("Nepovedlo se")}};
  $("nDel").onclick=async()=>{if(!db)return;try{await db.doc("settings/main").set({notice:""});$("nTxt").value="";toast("Oznámení smazáno")}catch(e){toast("Nepovedlo se")}};
  renderAdminLists();
 }
+async function saveMods(l){if(!db){toast("Úložiště není dostupné");return}try{await db.doc("settings/mods").set({list:l})}catch(e){toast("Uložení se nepovedlo")}}
+function renderMods(){const el=$("modList");if(!el)return;el.innerHTML=MODS.map((m,i)=>m.a?`<div class="exr">${av(i)}<div class="tx"><b>${esc(m.n)}</b>${m.s?" ⭐ top":""}</div><div class="ac"><button class="sm" data-m="s" data-i="${i}" type="button">${m.s?"Sundat ⭐":"Dát ⭐"}</button><button class="sm" data-m="r" data-i="${i}" type="button">${m.r?"Ve střídání ✔":"Mimo střídání"}</button><button class="sm danger" data-m="x" data-i="${i}" type="button">Odebrat</button></div></div>`:"").join("")}
+function bindMods(){
+ $("mAdd").onclick=async()=>{const n=$("mName").value.trim();if(!db)return toast("Úložiště není dostupné");if(n.length<2)return toast("Napiš jméno");if(MODS.some(m=>m.a&&m.n.toLowerCase()===n.toLowerCase()))return toast("Takové jméno už je");if(MODS.length>=14)return toast("Víc už jich není kam dát");await saveMods([...MODS,{n:n.slice(0,20),s:false,r:false,a:true}]);$("mName").value="";toast(n+" přidán(a) ✔")};
+ $("modList").addEventListener("click",async e=>{const b=e.target.closest("[data-m]");if(!b||!db)return;const i=+b.dataset.i,a=b.dataset.m,l=MODS.map(m=>({...m}));
+  if(a==="s")l[i].s=!l[i].s;
+  else if(a==="r"){l[i].r=!l[i].r;toast("Rozpis se přepočítal")}
+  else{if(ids().length<=2)return toast("Musí zůstat aspoň dva moderátoři");l[i].a=false;l[i].r=false;toast(l[i].n+" odebrán(a), staré změny zůstávají")}
+  await saveMods(l)});
+ renderMods();
+}
+function renderSave(){const b=$("svBox");if(!b)return;b.innerHTML=db?`<span class="pill ok">● Ukládání zapnuto</span><span class="pill">${Object.keys(ov).length} změn směn</span><span class="pill">${ex.length} omluvenek</span><span class="pill">${ids().length} moderátorů</span>${lastSave?`<span class="pill">synchronizováno v ${lastSave}</span>`:""}`:`<span class="pill bad">● Ukládání vypnuto</span><span class="hint">Web není propojený s databází, viz návod.</span>`}
 function renderAdminLists(){
  const cl=$("chgList"),el=$("exList");if(!cl||!el)return;
  const ks=Object.keys(ov).sort();
@@ -346,17 +396,34 @@ function renderAdminLists(){
 }
 
 /* start */
-applyP();todayBar();render();
-(async()=>{
- try{
-  const u=window.claude?claude.use("db"):Promise.resolve(null);
-  db=await Promise.race([u,new Promise(r=>setTimeout(()=>r(null),10000))])||null;
- }catch(e){db=null}
- if(!db){$("eMsg").textContent="Úložiště není dostupné, omluvenky a změny směn teď nefungují.";return}
+$("invTxt").value=`Ahoj! Tady najdeš naše moderátorské směny: ${LINK}\nKlikni na své jméno a uvidíš, kdy máš směnu. Kdyby ti to nevyšlo, pošli dole omluvenku.`;
+$("bInv").onclick=async()=>{try{await navigator.clipboard.writeText($("invTxt").value);toast("Zkopírováno ✔")}catch(e){$("invTxt").select();toast("Označeno, zkopíruj ručně")}};
+$("bBak").onclick=()=>saveFile("zaloha-smeny.json",JSON.stringify({v:1,overrides:ov,excuses:ex,mods:MODS,notice:cfg.notice||""},null,1),"application/json");
+$("bRes").onclick=()=>{if(!admin)return toast("Nejdřív odemkni admin panel");if(!db)return toast("Úložiště není dostupné");$("fRes").click()};
+$("fRes").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(Array.isArray(d.mods))await db.doc("settings/mods").set({list:d.mods});for(const k in (d.overrides||{}))await db.doc("overrides/"+k).set({pair:d.overrides[k].pair,ts:Date.now()});for(const x of (d.excuses||[])){const {id,...r}=x;if(id)await db.doc("excuses/"+id).set(r)}if(typeof d.notice==="string")await db.doc("settings/main").set({notice:d.notice});toast("Záloha obnovena ✔")}catch(err){toast("Soubor se nepodařilo načíst")}e.target.value=""};
+applyP();todayBar();render();renderSave();
+function rtdbShim(r){
+ const snapDoc=v=>({exists:v!==null&&v!==undefined,data:()=>v});
+ const docRef=p=>{const ref=r.ref(p);return{
+  set:d=>ref.set(d),update:d=>ref.update(d),delete:()=>ref.remove(),
+  onSnapshot(cb,err){const h=ref.on("value",x=>cb(snapDoc(x.val())),err);return()=>ref.off("value",h)}}};
+ const colRef=p=>{const ref=r.ref(p);return{
+  add:d=>ref.push(d),
+  onSnapshot(cb,err){const h=ref.on("value",x=>{const v=x.val()||{};cb({docs:Object.keys(v).map(id=>({id,data:()=>v[id]}))})},err);return()=>ref.off("value",h)}}};
+ return{doc:docRef,collection:colRef};
+}
+function subEx(){
+ if(unsubEx||!db)return;
+ unsubEx=db.collection("excuses").onSnapshot(q=>{ex=q.docs.map(d=>Object.assign({id:d.id},d.data()));refresh()},()=>{unsubEx=null});
+}
+(function(){
+ if(typeof firebase==="undefined"||FIREBASE_CONFIG.apiKey==="VLOZ_SEM"){$("eMsg").textContent="Web ještě není propojený s databází (viz návod). Zatím funguje jen zobrazení.";renderSave();return}
+ try{firebase.initializeApp(FIREBASE_CONFIG);db=rtdbShim(firebase.database());auth=firebase.auth();fb=true}catch(e){$("eMsg").textContent="Připojení k databázi se nepovedlo, zkontroluj nastavení.";return}
  const noop=()=>{};
- db.collection("overrides").onSnapshot(s=>{ov={};s.docs.forEach(d=>ov[d.id]=d.data());refresh()},noop);
- db.collection("excuses").onSnapshot(s=>{ex=s.docs.map(d=>Object.assign({id:d.id},d.data()));refresh()},noop);
- db.doc("settings/main").onSnapshot(s=>{cfg=s.exists?s.data():{};todayBar()},noop);
+ db.collection("overrides").onSnapshot(q=>{ov={};q.docs.forEach(d=>ov[d.id]=d.data());refresh()},noop);
+ db.doc("settings/main").onSnapshot(q=>{cfg=q.exists?q.data():{};todayBar()},noop);
+ db.doc("settings/mods").onSnapshot(q=>{const d=q.exists?q.data():null;const l=d&&Array.isArray(d.list)&&d.list.length>=5?d.list:BASE.map(n=>({n,s:false,r:true,a:true}));setMods(l);refresh()},noop);
+ auth.onAuthStateChanged(u=>{admin=!!u;if(admin)subEx();else{if(unsubEx){unsubEx();unsubEx=null}ex=[]}refresh()});
 })();
 </script>
 </body>
